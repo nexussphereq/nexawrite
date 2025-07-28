@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nexawrite</title>
+  <meta name="description" content="Nexawrite, the world's leading document editor with embedded media and AI features." />
+  <!-- Favicon & App icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Nexawrite" />
+  <meta name="mobile-web-app-title" content="Nexawrite" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+
+
+
+  <!-- Fonts -->
+  <link rel="preload" href="https://nexussphereq.neocities.org/nexawrite/Orbitron.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preload" href="https://nexussphereq.neocities.org/nexawrite/inter.ttf" as="font" type="font/ttf" crossorigin />
+
+  <!-- External JS dependencies (if needed, otherwise remove) -->
+  <script src="orbit.js" defer></script>
+  <script src="inter.js" defer></script>
+    
+
+  <!-- Styles -->
+  <style>
+    /* Font faces */
+    @font-face {
+      font-family: 'Orbitron';
+      src: url('https://nexussphereq.neocities.org/nexawrite/Orbitron.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('https://nexussphereq.neocities.org/nexawrite/inter.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* Reset and base fonts */
+    * {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Orbitron', Verdana, sans-serif;
+    }
+
+    /* Root variables */
+    :root {
+      --nx-gap: 30px;
+      --nx-gapy: 10px;
+      --nx-gapz: 80px;
+      --nx-radius: 16px;
+      --nx-blur: 14px;
+      --nx-navbar-width: 430px;
+    }
+
+    /* Background and container */
+    #boop, nav {
+      background: linear-gradient(180deg, #000 0%, #111 25%, #222 50%, #444 75%, #666 100%);
+      border: 1px solid #000;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.6), 0 0 6px rgba(0,0,0,0.4);
+      color: #eee;
+    }
+    #boop {
+      position: fixed;
+      inset: 0;
+      margin: 0;
+      padding: 0;
+      z-index: 0;
+    }
+
+    /* Main content container */
+    #container {
+      position: fixed;
+      top: var(--nx-gap);
+      left: var(--nx-gap);
+      right: calc(var(--nx-gapz) + var(--nx-navbar-width));
+      bottom: var(--nx-gap);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 1.5rem;
+      border-radius: var(--nx-radius);
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(var(--nx-blur));
+      -webkit-backdrop-filter: blur(var(--nx-blur));
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      color: #000;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      z-index: 1;
+      outline: none; /* prevent focus outline */
+    }
+    /* Scrollbar styling */
+    #container::-webkit-scrollbar {
+      width: 8px;
+    }
+    #container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    /* Sidebar navigation */
+    #navbar {
+      position: fixed;
+      top: var(--nx-gap);
+      right: var(--nx-gap);
+      bottom: var(--nx-gap);
+      width: var(--nx-navbar-width);
+      background: rgba(30, 30, 30, 0.75);
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
+      color: #fff;
+      border-radius: var(--nx-radius);
+      padding: 1rem;
+      overflow-y: auto;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      transform: translateX(0);
+      transition: transform 0.3s ease;
+    }
+    #navbar::-webkit-scrollbar {
+      width: 8px;
+    }
+    #navbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    /* Backdrop for mobile menu */
+    #backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 900;
+      transition: opacity 0.3s ease;
+    }
+    #backdrop.show {
+      display: block;
+    }
+
+    /* Hamburger menu button */
+    #hamburger {
+      position: fixed;
+      top: var(--nx-gapy);
+      left: var(--nx-gapy);
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
+      background: rgba(30, 30, 30, 0.75);
+      border: none;
+      color: #fff;
+      font-size: 1rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--nx-radius);
+      z-index: 1100;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 600px), (max-height: 400px), (orientation: portrait) {
+      #navbar {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 280px;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+        transform: translateX(100%);
+      }
+      #navbar.show {
+        transform: translateX(0);
+      }
+      #container {
+        top: var(--nx-gap);
+        right: var(--nx-gap);
+        left: var(--nx-gap);
+        bottom: var(--nx-gap);
+      }
+      #hamburger {
+        display: block;
+      }
+    }
+
+    /* Navigation section styling */
+    .navsec {
+      text-align: center;
+    }
+
+    /* Navigation buttons */
+    .navbtn {
+      display: block;
+      width: 80%;
+      margin: 12px auto;
+      padding: 0.75rem 1rem;
+      border-radius: 16px;
+      background: linear-gradient(to bottom, #3a3f51, #2a2e3d);
+      border: 2px solid #1f2230;
+      box-shadow:
+        inset 0 2px 4px rgba(255, 255, 255, 0.15),
+        0 2px 5px rgba(0, 0, 0, 0.6);
+      color: #e0e4ff;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .navbtn:hover {
+      background: linear-gradient(to bottom, #5a5f7f, #3a3f5d);
+      box-shadow:
+        inset 0 3px 6px rgba(255, 255, 255, 0.3),
+        0 4px 10px rgba(0, 0, 0, 0.75);
+      outline: none;
+    }
+
+    /* Document name and author buttons */
+    #docname, #docauth {
+      display: block;
+      width: 80%;
+      margin: 0  auto 1.5rem;
+      padding: 0.6rem 1rem;
+      border-radius: 14px;
+      background: linear-gradient(to bottom, #2c2f45, #1a1c2d);
+      border: 2px solid #151824;
+      box-shadow:
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        0 2px 5px rgba(0, 0, 0, 0.7);
+      color: #d0d4ff;
+      font-weight: 600;
+      font-size: 1rem;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    #docname:hover, #docauth:hover {
+      background: linear-gradient(to bottom, #404468, #2a2c45);
+      box-shadow:
+        inset 0 3px 6px rgba(255, 255, 255, 0.3),
+        0 4px 10px rgba(0, 0, 0, 0.8);
+      outline: none;
+    }
+
+    /* Print styles: show only #container content */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #container, #container * {
+        visibility: visible;
+      }
+      #container {
+        position: static !important;
+        overflow: visible !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        border: none !important;
+        color: #000 !important;
+      }
+    }
+
+    /* Animation for AI text */
+    .aistyle {
+      animation: aicolorcycle 4s linear infinite;
+      color: #ff0080;
+      text-shadow:
+        0 0 6px #ff0080,
+        0 0 12px #ff0080,
+        0 0 18px #ff0080,
+        0 0 24px #ff3399,
+        0 0 30px #ff3399,
+        0 0 36px #ff66b2,
+        0 0 42px #ff66b2;
+      font-weight: 700;
+    }
+    @keyframes aicolorcycle {
+      0%   { color: #ff0080; text-shadow-color: #ff0080; }
+      20%  { color: #ff33cc; text-shadow-color: #ff33cc; }
+      40%  { color: #cc33ff; text-shadow-color: #cc33ff; }
+      60%  { color: #6633ff; text-shadow-color: #6633ff; }
+      80%  { color: #3399ff; text-shadow-color: #3399ff; }
+      100% { color: #ff0080; text-shadow-color: #ff0080; }
+    }
+    a {
+      text-decoration: none;
+      color: #ff00ff;
+    }
+
+    /* Container styling for pasted media */
+    .paste-media-container {
+      margin: 1em 0;
+      max-width: 100%;
+      max-height: 300px;
+      overflow: auto;
+      border: 1px solid #ccc;
+      padding: 0.25em;
+      border-radius: 4px;
+    }
+    #timeboop {
+      margin:1px;padding:0px;position:fixed;top:8px;left:0px;right:0px;font-size:15px;color:#ffffff;text-align:center;display:block;font-family:Orbitron,verdana,sans-serif}
+  </style>
+</head>
+<body>
+  <div id="boop">
+  <div id="timeboop"></div>
+    <noscript
+      style="background-color:#000;color:#f00;position:fixed;inset:0;z-index:1000000;text-align:center;padding-top:2rem;">
+      <h1>Nexawrite needs Javascript.</h1>
+      <p>Please enable Javascript to continue.</p>
+    </noscript>
+
+    <section id="container" contenteditable="true" aria-label="Document editor" tabindex="0"></section>
+
+    <nav id="navbar" aria-label="Sidebar navigation">
+      <!-- Main Navigation -->
+      <section class="navsec" id="mainnav" role="region" aria-labelledby="mainnav-title">
+        <h1 id="mainnav-title">Nexawrite</h1>
+        <br /><br />
+
+        <button title="Document name" id="docname" aria-label="Document name"
+          onclick="updateName(window.prompt('Input Filename', getName() || 'Untitled Document') || false);">
+          Untitled Document
+        </button>
+
+        <button title="Document author" id="docauth" aria-label="Author Name"
+          onclick="updateAuthor(window.prompt('Enter name of author', getAuthor() || '') || false);">
+          No Author
+        </button>
+
+        <br />
+
+        <button onclick="showScreen('ainav');" class="navbtn" aria-controls="ainav" aria-expanded="false">
+          Nexawrite AI
+        </button>
+        
+        <button onclick="showScreen('playernav');" class="navbtn" aria-controls="playernav" aria-expanded="false">Media</button>
+        <button onclick="showScreen('editnav');" class="navbtn" aria-controls="editnav" aria-expanded="false">Edit</button>
+
+        <br />
+
+        <button onclick="exportAsHtml()" class="navbtn" aria-label="Export document as HTML">Export as HTML</button>
+        <button onclick="exportAsTxt()" class="navbtn" aria-label="Export document as plain text">Export as TXT</button>
+        
+
+        <input type="file" id="importInput" style="display:none" accept=".nwf,.html,.txt" aria-hidden="true" />
+
+        <button onclick="document.getElementById('importInput').click()" class="navbtn" aria-label="Import document file">Import File</button>
+
+        <button onclick="downloadddd();" class="navbtn" aria-label="Save document">Save</button>
+        <br />
+        <button onclick="window.location.reload();" class="navbtn" aria-label="New document">New</button>
+        <button onclick="window.print();" class="navbtn" aria-label="Print document">Print</button>
+        <br /><br />
+        <button onclick="showScreen('aboutnav');" class="navbtn" aria-label="About Nexawrite">About</button>
+        <br /><br /><br /><br /><br /><br />
+      </section>
+
+      <!-- AI Section -->
+      <section class="navsec" id="ainav" role="region" aria-labelledby="ainav-title" style="display:none;">
+        <h1 id="ainav-title">Nexawrite <span class="aistyle">AI</span> <span style="font-size:0.5em">beta</span></h1>
+        <button onclick="showScreen('mainnav');" class="navbtn" aria-label="Back to main menu">Back</button>
+        <p>Powered by <a href="https://chat.qwen.ai/" target="_blank" rel="noopener noreferrer">Qwen AI</a></p>
+        <iframe src="https://chat.qwen.ai/" style="width:100%; height:100vh; border:none; border-radius:16px;" title="Qwen AI Chat"></iframe>
+      </section>
+
+      <!-- Edit Section -->
+      <section class="navsec" id="editnav" role="region" aria-labelledby="editnav-title" style="display:none;">
+        <h1 id="editnav-title">Nexawrite <span style="font-weight:100;">edit</span></h1>
+        <button onclick="showScreen('mainnav');" class="navbtn" aria-label="Back to main menu">Back</button>
+
+        <button class="navbtn fmt-btn" data-cmd="bold" aria-label="Bold text">Bold</button>
+        <button class="navbtn fmt-btn" data-cmd="italic" aria-label="Italic text">Italic</button>
+        <button class="navbtn fmt-btn" data-cmd="underline" aria-label="Underline text">Underline</button>
+
+        <button class="navbtn fmt-block" data-block="h1" aria-label="Big header">Big header</button>
+        <button class="navbtn fmt-block" data-block="h2" aria-label="Medium header">Medium header</button>
+        <button class="navbtn fmt-block" data-block="h3" aria-label="Small header">Small header</button>
+
+        <label class="navbtn" style="display:block; cursor:pointer" aria-label="Insert image">
+          Insert image
+          <input type="file" id="imgInput" accept="image/*" style="display:none" aria-hidden="true" />
+        </label>
+
+        <br /><br /><br /><br /><br /><br />
+      </section>
+
+      <!-- Media Player Section -->
+      <!-- ▸ Media Player Section (quick links + flexible loader) -->
+<section class="navsec" id="playernav" role="region" aria-labelledby="playernav-title" style="display:none;">
+  <h1 id="playernav-title">Nexawrite Media Player</h1>
+
+  <!-- back -->
+  <button onclick="showScreen('mainnav');" class="navbtn" aria-label="Back to main menu">Back</button>
+
+  <!-- legacy quick‑open services (old buttons) -->
+  <button onclick="window.open('https://nexussphereq.42web.io/','_blank','noopener,noreferrer');" class="navbtn">QVIDEO</button>
+  <button onclick="window.open('https://nexussphereq.42web.io/audiosearch.php','_blank','noopener,noreferrer');" class="navbtn">QAUDIO</button>
+  <button onclick="window.open('https://youtube.com','_blank','noopener,noreferrer');" class="navbtn">YouTube</button>
+  <button onclick="window.open('https://soundcloud.com/','_blank','noopener,noreferrer');" class="navbtn">SoundCloud</button>
+  <button onclick="window.open('https://open.spotify.com','_blank','noopener,noreferrer');" class="navbtn">Spotify</button>
+
+  <hr style="margin:1rem 0">
+
+  <!-- new flexible loader -->
+  <p style="font-size:0.9rem;line-height:1.4">
+    Enter a YouTube ID/URL, Spotify track ID/URI, or direct media URL<br>
+    (<code>.mp4&nbsp;.webm&nbsp;.ogg&nbsp;.mp3&nbsp;.wav</code>) then press <b>Enter</b>.
+  </p>
+
+  <input
+    id="playerInput"
+    type="text"
+    placeholder="Paste ID / URL here…"
+    aria-label="Media player input"
+    style="width:90%;padding:0.5rem;border-radius:8px;border:none;margin:0.5rem 0"
+    onkeydown="if(event.key==='Enter') playMedia()"
+  >
+
+  <div id="playercontainer" style="margin-top:1rem;"></div>
+</section>
+<!-- ▸ About Section -->
+<section class="navsec" id="aboutnav" role="region" aria-labelledby="aboutnav-title" style="display:none;">
+  <h1 id="aboutnav-title">About Nexawrite</h1>
+
+  <p style="margin:1rem 0;font-size:0.95rem;line-height:1.5">
+    <strong>Nexawrite&nbsp;1.0&nbsp;beta</strong><br />
+   The world's leading document editor.
+  </p>
+
+  <ul style="text-align:left;list-style:none;font-size:0.9rem;padding:0 1rem 1rem">
+    <li><b>Author&nbsp;&amp;&nbsp;maintainer:</b> NexussphereQ</li>
+    <li><b>License:</b> MIT (code) &nbsp;|&nbsp; Fonts: SIL&nbsp;OFL&nbsp;1.1</li>
+    <li><b>NWF Standard:</b> <a href="https://nexussphereq.neocities.org/nexawrite/nwf.html" target="_blank" rel="noopener noreferrer">https://nexussphereq.neocities.org/nexawrite/nwf.html</a></li>
+    <li><b>Website:</b> <a href="https://nexussphereq.neocities.org" target="_blank" rel="noopener noreferrer">nexussphereq.neocities.org</a></li>
+    <!-- this drops later<li><b>Source&nbsp;code:</b> <a href="https://github.com/your‑repo" target="_blank" rel="noopener noreferrer">GitHub</a></li>-->
+  </ul>
+
+  <button onclick="showScreen('mainnav');" class="navbtn" aria-label="Back to main menu">Back</button>
+</section>
+
+    </nav>
+
+    <!-- Mobile backdrop -->
+    <div id="backdrop" tabindex="-1" aria-hidden="true"></div>
+    <button id="hamburger" aria-label="Toggle menu" aria-expanded="false" aria-controls="navbar">&#9776;</button>
+  </div>
+
+  <script>
+    // ELEMENTS
+    const container = document.getElementById('container');
+    const navbar = document.getElementById('navbar');
+    const hamburger = document.getElementById('hamburger');
+    const backdrop = document.getElementById('backdrop');
+    const importInput = document.getElementById('importInput');
+    const imgInput = document.getElementById('imgInput');
+    const docNameBtn = document.getElementById('docname');
+    const docAuthorBtn = document.getElementById('docauth');
+    var nameAuth={name:'Untitled Document',auth:''};
+    // INITIAL STATE
+    let currentScreen = 'mainnav';
+    const SCREENS = ['mainnav', 'ainav', 'editnav', 'playernav', 'aboutnav'];
+
+
+    // UTILS: Get/Set document name and author in name
+    function getName() {
+      return nameAuth.name;
+    }
+    function updateName(newName) {
+      if (newName && newName.trim()) {
+        nameAuth.name=newName.trim();
+        docNameBtn.textContent = newName.trim();
+      }
+    }
+    function getAuthor() {
+      return nameAuth.auth;
+    }
+    function updateAuthor(newAuthor) {
+      if (newAuthor && newAuthor.trim()) {
+        nameAuth.auth=newAuthor.trim();
+        docAuthorBtn.textContent = "Author: " + newAuthor.trim();
+      }
+    }
+
+    // Show specific sidebar screen and update aria-expanded on buttons
+    function showScreen(id) {
+      SCREENS.forEach(screen => {
+        const section = document.getElementById(screen);
+        const btn = Array.from(navbar.querySelectorAll('.navbtn')).find(b => b.getAttribute('aria-controls') === screen);
+        if (screen === id) {
+          section.style.display = 'block';
+          if (btn) btn.setAttribute('aria-expanded', 'true');
+        } else {
+          section.style.display = 'none';
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+      });
+      currentScreen = id;
+      
+    }
+
+    // TOGGLE MOBILE MENU
+    function toggleMenu() {
+      const isVisible = navbar.classList.toggle('show');
+      backdrop.classList.toggle('show', isVisible);
+      hamburger.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
+    }
+    function closeMenu() {
+      navbar.classList.remove('show');
+      backdrop.classList.remove('show');
+      hamburger.setAttribute('aria-expanded', 'false');
+    }
+
+    hamburger.addEventListener('click', toggleMenu);
+    backdrop.addEventListener('click', closeMenu);
+
+    // FORMAT TEXT COMMANDS (bold, italic, underline)
+    document.querySelectorAll('.fmt-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        document.execCommand(button.dataset.cmd);
+        container.focus();
+      });
+    });
+
+    // FORMAT BLOCK COMMANDS (headers)
+    document.querySelectorAll('.fmt-block').forEach(button => {
+      button.addEventListener('click', () => {
+        const block = button.dataset.block;
+        document.execCommand('formatBlock', false, block);
+        container.focus();
+      });
+    });
+
+    // HANDLE IMAGE INSERTION
+    imgInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          insertImage(ev.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+      imgInput.value = ''; // reset input to allow same file selection again
+    });
+
+    // Insert image at caret position
+    function insertImage(dataURL) {
+      const img = document.createElement('img');
+      img.src = dataURL;
+      img.alt = 'Inserted image';
+      img.style.maxWidth = '100%';
+      img.style.maxHeight = '400px';
+
+      const sel = window.getSelection();
+      if (!sel.rangeCount) {
+        container.appendChild(img);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(img);
+
+      // Move cursor after inserted image
+      range.setStartAfter(img);
+      range.setEndAfter(img);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      container.focus();
+    }
+
+    // Handle paste event for images
+    container.addEventListener('paste', event => {
+      if (event.clipboardData) {
+        const items = event.clipboardData.items;
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            event.preventDefault();
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = e => insertImage(e.target.result);
+            reader.readAsDataURL(blob);
+            break; // Only handle first image
+          }
+        }
+      }
+    });
+
+
+    // EXPORT as HTML
+    function exportAsHtml() {try{
+      var htmlContent = container.innerHTML;
+      htmlContent="<!DOCTYPE html><html><head><!"+"--generated by Nexawrite--><title>"+(getName()||'Document')+"</title><style>@font-face {font-family: 'Orbitron';src: url('"+orbitFont()+"') format('truetype');font-weight: normal;font-style: normal;font-display: swap;} @font-face {font-family: 'Inter';src: url('"+interFont()+"') format('truetype');font-weight: normal;font-style: normal;font-display: swap;}</style><style> * {font-family:Inter,sans-serif; h1,h2,h3,h4,h5,h6 {font-family:Orbitron;}</style></head><body>"+htmlContent+"</body></html>";
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      downloadFile(blob, (getName() || 'document') + '.html');
+    }catch(err){alert(err);}
+    }
+
+    // EXPORT as TXT (plain text)
+    function exportAsTxt() {
+      const txtContent = container.innerText;
+      const blob = new Blob([txtContent], { type: 'text/plain' });
+      downloadFile(blob, (getName() || 'document') + '.txt');
+    }
+
+    // Download helper
+    function downloadFile(blob, filename) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }
+
+    // SAVE DOCUMENT - save JSON file (.nwf)
+    function downloadddd() {
+      // Convert container content and embedded media into JSON
+      const doc = {
+        name: getName() || 'Untitled Document',
+        author: getAuthor() || 'No Author',
+        date: new Date().toISOString(),
+        content: serializeContent(container),
+      };
+      const json = JSON.stringify(doc, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      downloadFile(blob, (doc.name || 'document') + '.nwf');
+    }
+
+    // Serialize container content, including images, audio, video as base64
+    function serializeContent(root) {
+      // Deep clone container children, convert media sources to base64 data URIs
+      function nodeToJSON(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return { type: 'text', text: node.nodeValue };
+        }
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const obj = { type: 'element', tag: node.tagName.toLowerCase(), attributes: {}, children: [] };
+          for (const attr of node.attributes) {
+            obj.attributes[attr.name] = attr.value;
+          }
+          // For media elements, convert src to base64 data URL (if external)
+          if (['img', 'audio', 'video'].includes(obj.tag)) {
+            const src = obj.attributes.src || '';
+            if (src && !src.startsWith('data:')) {
+              obj.attributes.src = src; // TODO: Optionally convert to base64 if needed
+            }
+          }
+          for (const child of node.childNodes) {
+            obj.children.push(nodeToJSON(child));
+          }
+          return obj;
+        }
+        return null;
+      }
+      return Array.from(root.childNodes).map(nodeToJSON).filter(n => n);
+    }
+
+    // IMPORT FILE (JSON .nwf, HTML, TXT)
+    importInput.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+
+      if (file.name.endsWith('.nwf')) {
+        try {
+          const jsonDoc = JSON.parse(text);
+          rebuildFromDoc(jsonDoc);
+          if (jsonDoc.name) updateName(jsonDoc.name);
+          if (jsonDoc.author) updateAuthor(jsonDoc.author);
+        } catch (ex) {
+          alert('Failed to load .nwf file.');
+        }
+      } else if (file.name.endsWith('.html')) {
+        // Sanitize and import HTML content
+        const cleanHtml = sanitizeHtml(text);
+        container.innerHTML = cleanHtml;
+      } else if (file.name.endsWith('.txt')) {
+        container.textContent = text;
+      } else {
+        alert('Unsupported file type.');
+      }
+      e.target.value = ''; // reset input
+    });
+
+    // Rebuild document content from JSON format
+    function rebuildFromDoc(doc) {
+      if (!doc || !doc.content) return;
+      container.innerHTML = ''; // Clear content
+
+      // Recursive rebuild helper
+      function buildNode(obj) {
+        if (obj.type === 'text') return document.createTextNode(obj.text);
+
+        if (obj.type === 'element') {
+          const el = document.createElement(obj.tag);
+          if (obj.attributes) {
+            for (const [k, v] of Object.entries(obj.attributes)) {
+              el.setAttribute(k, v);
+            }
+          }
+          if (obj.children) {
+            for (const child of obj.children) {
+              const childNode = buildNode(child);
+              if (childNode) el.appendChild(childNode);
+            }
+          }
+          return el;
+        }
+        return null;
+      }
+
+      for (const nodeObj of doc.content) {
+        const node = buildNode(nodeObj);
+        if (node) container.appendChild(node);
+      }
+    }
+
+    // Simple HTML sanitizer: only allow a safe subset of tags and attributes
+    function sanitizeHtml(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const whitelistTags = ['b', 'i', 'u', 'em', 'strong', 'p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'img', 'audio', 'video', 'source'];
+      const whitelistAttrs = ['src', 'alt', 'controls', 'style', 'class', 'id', 'href', 'target'];
+
+      // Recursively clean nodes
+      function clean(node) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          if (!whitelistTags.includes(node.tagName.toLowerCase())) {
+            node.remove();
+            return null;
+          }
+          // Remove attributes not whitelisted
+          [...node.attributes].forEach(attr => {
+            if (!whitelistAttrs.includes(attr.name.toLowerCase())) {
+              node.removeAttribute(attr.name);
+            } else {
+              // For src attributes, allow only data or https/http urls
+              if (attr.name.toLowerCase() === 'src') {
+                if (!/^data:|^https?:\/\//i.test(attr.value)) {
+                  node.removeAttribute(attr.name);
+                }
+              }
+            }
+          });
+          // Clean children recursively
+          [...node.childNodes].forEach(child => clean(child));
+        } else if (node.nodeType === Node.COMMENT_NODE) {
+          node.remove();
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          // okay
+        }
+        return node;
+      }
+
+      [...doc.body.childNodes].forEach(child => clean(child));
+      return doc.body.innerHTML;
+    }
+
+    // MEDIA PLAYER
+    function playMedia() {
+      const input = document.getElementById('playerInput');
+      const container = document.getElementById('playercontainer');
+      const val = input.value.trim();
+      container.innerHTML = '';
+
+      if (!val) return;
+
+      // Detect YouTube video ID from URL or plain ID
+      const ytMatch = val.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]{11})/) || val.match(/^([\w-]{11})$/);
+      if (ytMatch) {
+        const id = ytMatch[1];
+        const iframe = document.createElement('iframe');
+        iframe.width = "320";
+        iframe.height = "180";
+        iframe.src = `https://www.youtube.com/embed/${id}`;
+        iframe.frameBorder = "0";
+        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+        iframe.allowFullscreen = true;
+        iframe.title = "YouTube Video Player";
+        container.appendChild(iframe);
+        return;
+      }
+
+      // Detect Spotify URI or track ID (simplified)
+      if (/spotify:track:[\w]+/.test(val) || /^[\w]{22}$/.test(val)) {
+        const id = val.includes('spotify:track:') ? val.split(':')[2] : val;
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://open.spotify.com/embed/track/${id}`;
+        iframe.width = "320";
+        iframe.height = "80";
+        iframe.frameBorder = "0";
+        iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+        iframe.allowFullscreen = true;
+        iframe.title = "Spotify Player";
+        container.appendChild(iframe);
+        return;
+      }
+
+      // QVIDEO / QAUDIO fallback: try video or audio tag with URL
+      const lower = val.toLowerCase();
+      if (lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg')) {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.src = val;
+        video.style.maxWidth = '100%';
+        container.appendChild(video);
+        return;
+      }
+      if (lower.endsWith('.mp3') || lower.endsWith('.wav') || lower.endsWith('.ogg')) {
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.src = val;
+        container.appendChild(audio);
+        return;
+      }
+
+      container.textContent = 'Unsupported media format or invalid ID/URL.';
+    }
+
+    // Keyboard shortcuts for formatting
+    document.addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+        switch (event.key.toLowerCase()) {
+          case 'b':
+            event.preventDefault();
+            document.execCommand('bold');
+            break;
+          case 'i':
+            event.preventDefault();
+            document.execCommand('italic');
+            break;
+          case 'u':
+            event.preventDefault();
+            document.execCommand('underline');
+            break;
+        }
+      }
+    });
+
+    // Initialize names from json on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const n = getName();
+      if (n) docNameBtn.textContent = n;
+      const a = getAuthor();
+      if (a) docAuthorBtn.textContent = a||"No Author";
+      showScreen('mainnav');
+    });
+    
+    setInterval(function (){
+      var currentTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      document.querySelector("#timeboop").textContent=currentTime;
+    },1000);
+  </script>
+</body>
+</html>
